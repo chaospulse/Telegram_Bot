@@ -126,7 +126,7 @@ namespace Telegram_Bot
 			}
 		}
 		//
-		// /start command
+		// /start 
 		//
 		private async static Task UpdatesHanlderAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
@@ -195,66 +195,7 @@ namespace Telegram_Bot
 			}
 		}
 		
-		private static TwitterClient userClient;
-		private static async Task TwitterMediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-		{
-			if (userClient == null)
-			{
-				var twitterConsumerKey = System.Configuration.ConfigurationManager.AppSettings["APIKey"];
-				var twitterConsumerSecret = System.Configuration.ConfigurationManager.AppSettings["APIKeySecret"];
-				var twitterAccessToken = System.Configuration.ConfigurationManager.AppSettings["AccessToken"];
-				var twitterAccessTokenSecret = System.Configuration.ConfigurationManager.AppSettings["AccessTokenSecret"];
-
-				userClient = new TwitterClient(twitterConsumerKey, twitterConsumerSecret, twitterAccessToken, twitterAccessTokenSecret);
-				await botClient.SendTextMessageAsync(update.Message.Chat.Id, "userClient was created.");
-			}
-			try
-			{
-				var authenticatedUser = await userClient.Users.GetAuthenticatedUserAsync();
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Error verifying credentials: " + ex.Message);
-			}
-
-			var twitterVideoUrl = update.Message.Text;
-
-			// Get the first media item (it might not always be a video)
-
-			// Download the video using HttpClient
-			//using (var httpClient = new HttpClient())
-			//{
-			//	var videoBytes = await httpClient.GetByteArrayAsync(twitterVideoUrl);
-			//	// At this point, you have the videoBytes, and you can save it or process it further.
-			//	// For example, you can send the video to the user (assuming videoBytes contains the video data)
-			//	using (var videoStream = new MemoryStream(videoBytes))
-			//	{
-			//		var inputFile = new InputFileStream(videoStream, "video.mp4");
-			//		await botClient.SendVideoAsync(update.Message.Chat.Id, inputFile);
-			//	}
-			//}
-
-			//var client = new HttpClient();
-			//var request = new HttpRequestMessage
-			//{
-			//	Method = System.Net.Http.HttpMethod.Get,
-			//	RequestUri = new Uri(twitterVideoUrl),
-			//	Headers =
-			//	{
-			//		{ "X-RapidAPI-Key", "80782c0e07mshdebffe26b158e45p154643jsn915acbc88c75" },
-			//		{ "X-RapidAPI-Host", "twitter135.p.rapidapi.com" },
-			//	},
-			//};
-
-			//JObject jsonResponse;
-			//using (var response = await client.SendAsync(request))
-			//{
-			//	response.EnsureSuccessStatusCode();
-			//	var body = await response.Content.ReadAsStringAsync();
-			//	jsonResponse = JObject.Parse(body);
-			//}
-			//Console.WriteLine(jsonResponse);
-		}
+		
 		private static async Task ErrorsHandlerAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 		{
 			await botClient.DeleteWebhookAsync(true, cancellationToken);
