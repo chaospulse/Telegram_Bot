@@ -6,9 +6,10 @@ using YoutubeExplode.Videos.Streams;
 
 namespace Telegram_Bot
 {
-	partial class TelegramBot
+	public static class YouTubeMediaSend
 	{
-		static string GetYouTubeVideoId(string url)
+		private static Dictionary<long, YoutubeClient> youtubeSettings = new Dictionary<long, YoutubeClient>();
+		private static string GetYouTubeVideoId(string url)
 		{
 			// Regex pattern for YouTube Shorts and YouTube Video URLs
 			string pattern = @"(?:youtube\.com/(?:[^/\n\s]+/[^/\n\s]+/?|(?:v|e(?:mbed)?)/|[^/\n\s]+[?#](?:v=|.*\bv=))|youtu\.be/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})";
@@ -26,7 +27,7 @@ namespace Telegram_Bot
 			// if no match found, return empty string
 			return string.Empty;
 		}
-		private static async Task YoutubeMediaSend(Update update, CancellationToken cancellationToken)
+		public static async Task MediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
 			// Create a new instance of the YouTubeClient class if it doesn't exist or get the existing one
 			if (!youtubeSettings.TryGetValue(update.Message.Chat.Id, out var youtubeClient))
@@ -49,7 +50,7 @@ namespace Telegram_Bot
 					{
 						// Send video to chat
 						await botClient.SendVideoAsync(
-							chatId: update.Message.Chat.Id, 
+							chatId: update.Message.Chat.Id,
 							video: InputFile.FromUri(videoStreamInfo.Url),
 							replyToMessageId: update.Message.MessageId);
 					}

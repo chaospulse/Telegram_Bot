@@ -1,17 +1,10 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
 namespace Telegram_Bot
 {
-	//
 	// inline keyboard settings (for TikTok)
-	//
 	public class TikTokSettingsState
 	{
 		public string? DescriptionButtonText { get; set; } = "Disable Description";
@@ -19,24 +12,19 @@ namespace Telegram_Bot
 		public bool IsDescriptionEnabled { get; set; } = true;
 		public bool IsHDVideoLinkEnabled { get; set; } = true;
 	}
-	partial class TelegramBot
+	public static class TikTokMediaSend
 	{
-		//
-		// TikTok send media in chat
-		//
-		private static async Task TikTokMediaSend(Update update, CancellationToken cancellationToken)
+		// create a dictionary to store chat settings for one bot session
+		public static Dictionary<long, TikTokSettingsState> chatSettings = new Dictionary<long, TikTokSettingsState>();
+
+		// send media in chat
+		public static async Task MediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
 			if (!chatSettings.TryGetValue(update.Message.Chat.Id, out var settingsState))
 			{
 				settingsState = new TikTokSettingsState();
 				chatSettings[update.Message.Chat.Id] = settingsState;
 			}
-			Console.WriteLine("-------------------------------");
-			Console.WriteLine($"Send TikTok link in chat: {update.Message.Chat.Id}, Sender: @{update.Message.From.Username}");
-			Console.WriteLine("SettingsState params:");
-			Console.WriteLine($"IsDescriptionEnabled: {settingsState.IsDescriptionEnabled}");
-			Console.WriteLine($"IsHDVideoLinkEnabled: {settingsState.IsHDVideoLinkEnabled}");
-			Console.WriteLine("-------------------------------");
 
 			string tiktokVideoUrl = update.Message.Text.Substring(22, update.Message.Text.Length - 23);
 
@@ -59,10 +47,14 @@ namespace Telegram_Bot
 			//request.AddHeader("X-RapidAPI-Key", System.Configuration.ConfigurationManager.AppSettings["X-RapidAPI-Key"]);
 			//request.AddHeader("X-RapidAPI-Host", "tiktok-video-no-watermark2.p.rapidapi.com");
 
+			//create JSON response
 			JObject jsonResponse;
 			using (var response = await client.SendAsync(request))
 			{
+				// ensure the response is successful
 				response.EnsureSuccessStatusCode();
+
+				// read the response as a string
 				var body = await response.Content.ReadAsStringAsync();
 
 				// parse the JSON response
@@ -72,13 +64,14 @@ namespace Telegram_Bot
 			// tiktok is consists of images
 			if (jsonResponse["data"]["images"] != null)
 			{
-				// images array
+				// get images array
 				JArray imagesArray = (JArray)jsonResponse["data"]["images"];
 
 				// create media group
 				List<IAlbumInputMedia> mediaList = new List<IAlbumInputMedia>();
 				foreach (var imageUrl in imagesArray)
 				{
+					// add image to media group
 					mediaList.Add(new InputMediaPhoto(InputFile.FromUri(imageUrl.ToString())));
 				}
 
@@ -96,8 +89,6 @@ namespace Telegram_Bot
 				string HDvideoUrl = jsonResponse["data"]["hdplay"].ToString();
 				string videoDescription = jsonResponse["data"]["title"].ToString();
 
-				Console.WriteLine("HD Video URL: " + HDvideoUrl);
-
 				string message;
 				if (chatSettings[update.Message.Chat.Id].IsDescriptionEnabled && chatSettings[update.Message.Chat.Id].IsHDVideoLinkEnabled)
 					message = $"Video Description: {videoDescription}\n\nHD Video Link: {HDvideoUrl}";
@@ -111,20 +102,16 @@ namespace Telegram_Bot
 				else
 					message = "";
 
-				await botClient.SendTextMessageAsync(update.Message.Chat.Id, message);
-
 				//send video to user
 				await botClient.SendVideoAsync(
 				chatId: update.Message.Chat.Id,
 				video: InputFile.FromUri(videoUrl),
+				caption: message,
 				replyToMessageId: update.Message.MessageId);
 
 				//TikTokMediaDownload(jsonResponse, HDvideoUrl);
 			}
 		}
-		//
-		// TikTok download media on pc
-		//
 		private static async Task TikTokMediaDownload(JObject jsonResponse, string HDvideoUrl)
 		{
 			string videoId = jsonResponse["data"]["id"].ToString();

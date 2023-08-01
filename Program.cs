@@ -3,19 +3,17 @@ using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using YoutubeExplode;
 
 namespace Telegram_Bot
 {
+	// delegate for command handlers
 	public delegate Task CommandHanlder(Message message, ITelegramBotClient botClient);
 	
 	internal partial class TelegramBot
 	{
 		private static TelegramBotClient botClient = null!;
 		private static Dictionary<string, CommandHanlder> botCommands = null!;
-
-		// create a dictionary to store chat settings for one bot session
-		private static Dictionary<long, TikTokSettingsState> chatSettings = new Dictionary<long, TikTokSettingsState>();
-
 		public static void Main()
 		{
 			using var cts = new CancellationTokenSource();
