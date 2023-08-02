@@ -16,13 +16,16 @@ namespace Telegram_Bot
 		private static Dictionary<string, CommandHanlder> botCommands = null!;
 		public static void Main()
 		{
+			botClient = new TelegramBotClient(System.Configuration.ConfigurationManager.AppSettings["BotToken"]!);
+		
 			using var cts = new CancellationTokenSource();
+			var updates = new QueuedUpdateReceiver(botClient);
 			var receiverOptions = new ReceiverOptions
 			{
 				AllowedUpdates = Array.Empty<UpdateType>()
 			};
 			// create bot client
-			botClient = new TelegramBotClient(System.Configuration.ConfigurationManager.AppSettings["BotToken"]!);
+			
 			// configure bot commands
 			botCommands = new Dictionary<string, CommandHanlder>()
 			{
@@ -31,6 +34,7 @@ namespace Telegram_Bot
 			};
 			// start receiving messages
 			botClient.StartReceiving(UpdatesHanlderAsync, ErrorsHandlerAsync, receiverOptions, cts.Token);
+			
 
 			Console.WriteLine($"[{DateTime.UtcNow} UTC] Bot started.");
 			Console.ReadLine();

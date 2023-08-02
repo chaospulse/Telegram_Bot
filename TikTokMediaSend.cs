@@ -20,12 +20,14 @@ namespace Telegram_Bot
 		// send media in chat
 		public static async Task MediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
+			// check if chat settings are initialized
 			if (!chatSettings.TryGetValue(update.Message.Chat.Id, out var settingsState))
 			{
 				settingsState = new TikTokSettingsState();
 				chatSettings[update.Message.Chat.Id] = settingsState;
 			}
 
+			// cut tiktok video url from message
 			string tiktokVideoUrl = update.Message.Text.Substring(22, update.Message.Text.Length - 23);
 
 			// HttpClienet
@@ -37,15 +39,9 @@ namespace Telegram_Bot
 				Headers =
 				{
 					{ "X-RapidAPI-Key", System.Configuration.ConfigurationManager.AppSettings["X-RapidAPI-Key"] },
-					{ "X-RapidAPI-Host", "tiktok-video-no-watermark2.p.rapidapi.com" }
+					{ "X-RapidAPI-Host", System.Configuration.ConfigurationManager.AppSettings["X-RapidAPI-Host(TikTok)"] },
 				},
 			};
-
-			// RestCharp
-			//var client = new RestClient($"https://tiktok-video-no-watermark2.p.rapidapi.com/?url=https%3A%2F%2Fvm.tiktok.com%2F{tiktokVideoUrl}%2F&hd=1");
-			//var request = new RestRequest();
-			//request.AddHeader("X-RapidAPI-Key", System.Configuration.ConfigurationManager.AppSettings["X-RapidAPI-Key"]);
-			//request.AddHeader("X-RapidAPI-Host", "tiktok-video-no-watermark2.p.rapidapi.com");
 
 			//create JSON response
 			JObject jsonResponse;
@@ -75,12 +71,20 @@ namespace Telegram_Bot
 					mediaList.Add(new InputMediaPhoto(InputFile.FromUri(imageUrl.ToString())));
 				}
 
-				//send media group to user
-				await botClient.SendMediaGroupAsync(
-				chatId: update.Message.Chat.Id,
-				media: mediaList.ToArray(),
-				replyToMessageId: update.Message.MessageId,
-				cancellationToken: cancellationToken);
+				// media group is limited to 10 items
+				for (int i = 0; i < mediaList.Count; i += 10)
+				{
+					// take 10 items from mediaList
+					var mediaGroup = mediaList.Skip(i).Take(10).ToArray();
+
+					// send media group to user
+					await botClient.SendMediaGroupAsync(
+						chatId: update.Message.Chat.Id,
+						media: mediaGroup,
+						replyToMessageId: update.Message.MessageId,
+						cancellationToken: cancellationToken);
+					await Task.Delay(250); 
+				}
 			}
 			//tiktok is a video
 			else
@@ -108,8 +112,6 @@ namespace Telegram_Bot
 				video: InputFile.FromUri(videoUrl),
 				caption: message,
 				replyToMessageId: update.Message.MessageId);
-
-				//TikTokMediaDownload(jsonResponse, HDvideoUrl);
 			}
 		}
 		private static async Task TikTokMediaDownload(JObject jsonResponse, string HDvideoUrl)
@@ -130,7 +132,6 @@ namespace Telegram_Bot
 						{
 							await videoStream.CopyToAsync(fileStream);
 						}
-						Console.WriteLine($"Video was successfully download to {destinationFilePath}");
 					}
 				}
 				catch (HttpRequestException e)

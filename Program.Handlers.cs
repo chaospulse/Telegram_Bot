@@ -1,11 +1,7 @@
 ﻿using Telegram.Bot.Types;
 using Telegram.Bot;
 using Telegram.Bot.Types.Enums;
-using Newtonsoft.Json.Linq;
-using Tweetinvi;
 using Telegram.Bot.Types.ReplyMarkups;
-using Tweetinvi.Core.Models;
-using static System.Net.WebRequestMethods;
 
 namespace Telegram_Bot
 {
@@ -20,15 +16,23 @@ namespace Telegram_Bot
 				OnCallbackQueryReceived(update);
 				return;
 			}
+
 			// user send text mesaage
 			if (update.Message.Text != null)
 			{
 				Console.WriteLine($"Recived message from {update.Message.From.Username}: {update.Message.Text}\t| chat: {update.Message.Chat.Id} |\t[{update.Message.Date}]");
 
+				// its not a link or command
+				if (!update.Message.Text.Contains("https") && !(update.Message.Text.StartsWith("/")))
+					return;
+
 				// its a command
 				if (update.Message.Text!.StartsWith("/"))
 				{
-					// if command was send from gropup
+					if (update.Message.Text== "/start")
+						return;
+
+					// command was send from gropup
 					if (update.Message.Text.Contains('@'))
 					{
 						string[] parts = update.Message.Text.Split('@');
@@ -37,37 +41,41 @@ namespace Telegram_Bot
 					// if command is in the list
 					if (botCommands.TryGetValue(update.Message.Text, out var hanlder))
 						await hanlder(update.Message, botClient);
-					return;
 				}
 
 				// its a tiktok link
-				else if (update.Message.Text.Contains("https://vm.tiktok.com"))
+				else if(update.Message.Text.Contains("https://vm.tiktok.com"))
 					TikTokMediaSend.MediaSend(botClient, update, cancellationToken);
 
 				// its a youtube link
-				else if (update.Message.Text.Contains("https://youtu.be") ||
+				else if(update.Message.Text.Contains("https://youtu.be") ||
 						update.Message.Text.Contains("https://www.youtube.com") ||
 						update.Message.Text.Contains("https://youtube.com"))
 					YouTubeMediaSend.MediaSend(botClient, update, cancellationToken);
 
+				// its a instagram link
+				else if(update.Message.Text.Contains("https://www.instagram.com") ||
+						update.Message.Text.Contains("https://instagram.com"))
+					InstagramMediaSend.MediaSend(botClient, update, cancellationToken);
+
 				// its a twitter link
-				else if (update.Message.Text.Contains("https://twitter.com"))
+				else if(update.Message.Text.Contains("https://twitter.com"))
 					TwitterMediaSend.MediaSend(botClient, update, cancellationToken);
 
-				// message type not recognized
-				//else
-				//	RedditMediaSend(update, cancellationToken);
+				//  its a reddit link
+				else if(update.Message.Text.Contains("https://www.reddit.com"))
+					RedditMediaSend.MediaSend(botClient, update, cancellationToken);
 			}
 		}
-
+		//
 		// /help command 
 		private static async Task HelpHandlerAsync(Telegram.Bot.Types.Message message, ITelegramBotClient botClient)
 		{
 			await botClient.SendTextMessageAsync(
 			chatId: message.Chat.Id,
-			text: $"Hi! I'm a Media Downloader Bot created by @{System.Configuration.ConfigurationManager.AppSettings["MyTelegramTag"]}.\nTo change my send TikTok config select /settings.\nGood luck!");
+			text: $"Hi! I'm a Media Downloader Bot created by @{System.Configuration.ConfigurationManager.AppSettings["MyTelegramTag"]}.\nI can download media from TikTok, YouTube, Instagram, Twitter(soon), Reddit(soon).\nTo change my TikTok config select /settings.\nGood luck!");
 		}
-
+		//
 		// /settings command  (for TikTok)
 		private static async Task SettingsHandlerAsync(Telegram.Bot.Types.Message message, ITelegramBotClient botClient)
 		{
@@ -97,11 +105,11 @@ namespace Telegram_Bot
 			// send message with keyboard
 			await botClient.SendTextMessageAsync(
 				chatId: message.Chat.Id,
-				text: "⚙️ Settings:",
+				text: "⚙️ TikTok Settings:",
 				replyMarkup: inlineKeyboard
 			);
 		}
-
+		//
 		// for Callback Query from Inline Keyboard (for TikTok)
 		private static async void OnCallbackQueryReceived(Update update)
 		{
@@ -170,7 +178,10 @@ namespace Telegram_Bot
 					break;
 			}
 		}
-		
+		//
+		// 
+
+		//
 		// error handler
 		private static async Task ErrorsHandlerAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
 		{
