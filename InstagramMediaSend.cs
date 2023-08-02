@@ -11,9 +11,9 @@ using AngleSharp.Css.Dom;
 
 namespace Telegram_Bot
 {
-	public static class InsagramMediaSend
+	public static class InstagramMediaSend
 	{
-		private static async void MediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+		public static async void MediaSend(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
 		{
 			// encode url
 			string url = System.Web.HttpUtility.UrlEncode(update.Message.Text);

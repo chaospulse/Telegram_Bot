@@ -65,6 +65,12 @@ namespace Telegram_Bot
 				//  its a reddit link
 				else if(update.Message.Text.Contains("https://www.reddit.com"))
 					RedditMediaSend.MediaSend(botClient, update, cancellationToken);
+
+				// its a unsupported link
+				else
+					await botClient.SendTextMessageAsync(
+						chatId: update.Message.Chat.Id,	
+						text: "Sorry, I can't download this link :(");
 			}
 		}
 		//
